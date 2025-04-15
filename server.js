@@ -46,6 +46,25 @@ app.post('/api/shorten', async (req, res) => {
     }
 });
 
+app.get('/:shortCode', async (req, res) => {
+    try {
+        const { shortCode } = req.params;
+        
+        const urlData = await db.getUrl(shortCode);
+        
+        if (!urlData) {
+            return res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+        }
+
+        await db.incrementClickCount(shortCode);
+        
+        res.redirect(urlData.original_url);
+    } catch (error) {
+        console.error('Error redirecting:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 function isValidUrl(string) {
     try {
         const url = new URL(string);
