@@ -46,9 +46,34 @@ app.post('/api/shorten', async (req, res) => {
     }
 });
 
+app.get('/api/stats', async (req, res) => {
+    try {
+        const urls = await db.getAllUrls();
+        const totalUrls = urls.length;
+        const totalClicks = urls.reduce((sum, url) => sum + url.click_count, 0);
+        
+        res.json({
+            totalUrls,
+            totalClicks,
+            recentUrls: urls.slice(0, 10)
+        });
+    } catch (error) {
+        console.error('Error fetching stats:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.get('/stats', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'stats.html'));
+});
+
 app.get('/:shortCode', async (req, res) => {
     try {
         const { shortCode } = req.params;
+        
+        if (shortCode === 'favicon.ico') {
+            return res.status(404).end();
+        }
         
         const urlData = await db.getUrl(shortCode);
         

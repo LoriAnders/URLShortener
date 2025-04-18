@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - URLShortener</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #f8f9ff;
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e1e1e1;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            display: block;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .urls-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .urls-table th,
+        .urls-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e1e1e1;
+        }
+
+        .urls-table th {
+            background: #f8f9ff;
+            font-weight: 600;
+        }
+
+        .url-cell {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="nav-link">← Back to Home</a>
+        
+        <h1>📊 Analytics Dashboard</h1>
+        <p class="subtitle">Track your shortened URLs performance</p>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span id="totalUrls" class="stat-number">-</span>
+                <span class="stat-label">Total URLs</span>
+            </div>
+            <div class="stat-card">
+                <span id="totalClicks" class="stat-number">-</span>
+                <span class="stat-label">Total Clicks</span>
+            </div>
+        </div>
+
+        <h3>Recent URLs</h3>
+        <table class="urls-table">
+            <thead>
+                <tr>
+                    <th>Short Code</th>
+                    <th>Original URL</th>
+                    <th>Clicks</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody id="urlsTableBody">
+                <tr>
+                    <td colspan="4" style="text-align: center; color: #666;">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <script>
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                
+                document.getElementById('totalUrls').textContent = data.totalUrls;
+                document.getElementById('totalClicks').textContent = data.totalClicks;
+                
+                const tbody = document.getElementById('urlsTableBody');
+                tbody.innerHTML = '';
+                
+                if (data.recentUrls.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #666;">No URLs created yet</td></tr>';
+                    return;
+                }
+                
+                data.recentUrls.forEach(url => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><code>${url.short_code}</code></td>
+                        <td class="url-cell" title="${url.original_url}">${url.original_url}</td>
+                        <td>${url.click_count}</td>
+                        <td>${new Date(url.created_at).toLocaleDateString()}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                document.getElementById('urlsTableBody').innerHTML = 
+                    '<tr><td colspan="4" style="text-align: center; color: #f44;">Failed to load data</td></tr>';
+            }
+        }
+        
+        loadStats();
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>
