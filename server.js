@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const { nanoid } = require('nanoid');
@@ -5,6 +7,7 @@ const Database = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const db = new Database();
 
 app.use(express.json());
