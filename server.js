@@ -10,9 +10,16 @@ const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 const db = new Database();
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(express.static('public'));
+
+app.use((req, res, next) => {
+    res.header('X-Frame-Options', 'DENY');
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('X-XSS-Protection', '1; mode=block');
+    next();
+});
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -96,7 +103,21 @@ app.get('/:shortCode', async (req, res) => {
 function isValidUrl(string) {
     try {
         const url = new URL(string);
-        return url.protocol === 'http:' || url.protocol === 'https:';
+        
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+            return false;
+        }
+        
+        if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+            return process.env.NODE_ENV === 'development';
+        }
+        
+        const forbiddenDomains = ['malware.com', 'spam.com'];
+        if (forbiddenDomains.some(domain => url.hostname.includes(domain))) {
+            return false;
+        }
+        
+        return true;
     } catch (_) {
         return false;
     }
